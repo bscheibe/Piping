@@ -36,9 +36,10 @@ int sh( int argc, char **argv, char **envp)
   int uid, i, status, argsct, go = 1;
   struct passwd *password_entry;
   char *homedir;
-  
+
   struct pathelement *pathlist;
   int count;
+  int background;
   char *token;
   struct prev_cmd* head = NULL;
   struct alias* alist = NULL;
@@ -48,8 +49,8 @@ int sh( int argc, char **argv, char **envp)
   password_entry = getpwuid(uid);               /* get passwd info */
   homedir = password_entry->pw_dir;		/* Home directory to start
 						  out with*/
- 
-  // store the current working directory  
+
+  // store the current working directory
   if ( (pwd = getcwd(NULL, PATH_MAX+1)) == NULL )
   {
     perror("getcwd");
@@ -74,8 +75,10 @@ int sh( int argc, char **argv, char **envp)
   {
     /* print your prompt */
     valid = 1;
-    printf("%s%s", prefix, prompt); 
-    
+    background = 0;
+    waitpid(-1, &status, WNOHANG);
+    printf("%s%s", prefix, prompt);
+
     // Read in command line
 	if(fgets(commandline, MAX_CANON, stdin) == NULL){
 		commandline[0] = '\n';
@@ -84,16 +87,20 @@ int sh( int argc, char **argv, char **envp)
 		printf("\n");
 	}
 	int space = 1;
-	
+
 	// Remove newline character from end of input
 	if (strlen(commandline) > 1){
 		commandline[strlen(commandline) - 1] = '\0';
 	}
 	else {
 		valid = 0;
-	}	
-	
+	}
+
 	// Check command for special cases
+	if (commandline[strlen(commandline)-1] == '&') {
+		commandline[strlen(commandline)-1] = '\0';
+		background = 1;
+	}// Check for & here!
 	for(i = 0; i < strlen(commandline); i++){
 		if(commandline[i] != ' '){
 			space = 0;
@@ -102,8 +109,8 @@ int sh( int argc, char **argv, char **envp)
 	if (space){
 		commandline[strlen(commandline)-1] = '\n';
 		valid = 0;
-	}	
-	
+	}
+
 	// Parse the command line to separate the arguments
 	count = 1;
 	args[0] = strtok(commandline, " ");
@@ -145,14 +152,14 @@ int sh( int argc, char **argv, char **envp)
 			}
 		}
 	}
-	
+
 	// Reset (used) aspect of each alias struct
 	curr = alist;
 	while(curr!=NULL){
 		curr->used = 0;
 		curr=curr->next;
 	}
-	
+
         // Check for each built in command
 	command = args[0];
 	if(strcmp(command, "exit") == 0){
@@ -161,7 +168,7 @@ int sh( int argc, char **argv, char **envp)
 		exit(0);
 	}
 	else if(strcmp(command, "which") == 0){
-		// Finds first alias or file in path directory that 
+		// Finds first alias or file in path directory that
 		// matches the command
 		printf("Executing built-in which\n");
 		if(argsct == 1){
@@ -180,7 +187,6 @@ int sh( int argc, char **argv, char **envp)
 					printf("glob: Read error.\n");
 				}
 				else{
-				
 					if(globber.gl_pathv != NULL){
 						which(globber.gl_pathv[0], pathlist, alist);
 					}
@@ -189,7 +195,7 @@ int sh( int argc, char **argv, char **envp)
 					}
 				}
 			}
-		}		
+		}
 	}
 	else{
 
@@ -205,37 +211,34 @@ int sh( int argc, char **argv, char **envp)
 	else{
 		struct pathelement* curr = pathlist;
 		char *tmp = malloc(MAX_CANON*sizeof(char));
-		
 		while(curr!=NULL & !found){
 			snprintf(tmp,MAX_CANON,"%s/%s", curr->element, args[0]);
 			if(access(tmp, X_OK)==0){
 				toexec = tmp;
-				found = 1;		
+				found = 1;
 			}
 			curr=curr->next;
 		}
 	}
-	
 	// If the command if found in the path, execute it as a child process
 	if(found){
-
 		printf("Executing %s\n", toexec);
-		
 		// Create a child process
 		cpid = fork();
-		
-		struct itimerval timer;		
-		
-		
+		struct itimerval timer;
 		if(cpid == 0){
-			// Child process executes command	
-			execve(toexec, args, envp);	
+			// Child process executes command
+			execve(toexec, args, envp);
 		}
 		else if(cpid == -1){
 			perror(NULL);
 		}
 		else {
-			// Parent process (shell) times child process 
+			// Parent process (shell) places continues onward. 
+			if (background) {
+				continue;
+			}
+			// Parent process (shell) times child process
 			if(argc > 1){
 				timer.it_value.tv_sec = atoi(argv[1]);
 				timer.it_interval.tv_sec = 0;
@@ -284,7 +287,7 @@ char *which(char *command, struct pathelement *pathlist, struct alias *alist )
 	struct pathelement *curr = pathlist;
 	char *path = malloc(MAX_CANON*(sizeof(char)));
 	int found = 0;
-	
+
 
 	// Search aliases for command
 	struct alias* curra = alist;
