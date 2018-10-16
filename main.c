@@ -1,15 +1,16 @@
-/* 
+/*
  * Sample Project 2
  */
 
 #include "sh.h"
+#include "watchmail.h"
 #include <signal.h>
 #include <stdio.h>
 #include <sys/time.h>
 
-void sig_handler(int signal); 
+void sig_handler(int signal);
 
-/* 
+/*
  * This is the main function that calls
  * the sh function which starts the shell
  *
@@ -22,11 +23,11 @@ int main( int argc, char **argv, char **envp )
   signal(SIGTERM, sig_handler);
   signal(SIGTSTP, sig_handler);
   signal(SIGALRM, sig_handler);
-  
+
   return sh(argc, argv, envp);
 }
 
-/* 
+/*
  * This is the function which handles signals that
  * are sent to it. (SIGTERM, SIGINT, SIGSTP, SIGALRM)
  *

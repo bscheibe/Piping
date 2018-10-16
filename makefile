@@ -2,9 +2,9 @@
 CC=gcc
 #CC=gcc -Wall
 
-mysh: sh.o get_path.o main.c 
-	$(CC) -g main.c sh.o get_path.o -o mysh
-#	$(CC) -g main.c sh.o get_path.o bash_getcwd.o -o mysh
+mysh: watchmail.o sh.o get_path.o main.c
+	$(CC) -g main.c watchmail.o sh.o get_path.o -o mysh -lpthread
+#	$(CC) -g main.c watchmail.o sh.o get_path.o bash_getcwd.o -o mysh -lpthread
 
 sh.o: sh.c sh.h
 	$(CC) -g -c sh.c
@@ -12,5 +12,8 @@ sh.o: sh.c sh.h
 get_path.o: get_path.c get_path.h
 	$(CC) -g -c get_path.c
 
+watchmail.o: watchmail.c watchmail.h
+	$(CC) -g -c watchmail.c
+
 clean:
-	rm -rf sh.o get_path.o mysh
+	rm -rf watchmail.o sh.o get_path.o mysh

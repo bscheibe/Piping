@@ -1,5 +1,5 @@
-/* 
- * Nathan Hamilton, Patrick Hough 
+/*
+ * Nathan Hamilton, Patrick Hough
  * CISC 361-010
  * 3/10/2016
  * Project 2
@@ -35,15 +35,15 @@ pid_t cpid;
 //the integer representation of the process id
 int pid;
 
-/* function call to start the shell 
- * argc: the argument count 
- * argv: the array of the arguments given 
+/* function call to start the shell
+ * argc: the argument count
+ * argv: the array of the arguments given
  * envp: the array of pointers to environment variables
  */
 int sh( int argc, char **argv, char **envp);
 
 /* function call for the which command
- * command: the command that you're looking for 
+ * command: the command that you're looking for
  * pathlist: the path data structure
  * alist: the alias data structure
  */
@@ -120,6 +120,8 @@ char ** set_envir (int argsct, char** args, struct pathelement* pathlist, char**
  * s2: the second string to compare
  */
 int matches (char * s1, char * s2);
+
+void *watchmail_thread(void *arg);
 
 #define PROMPTMAX 32
 #define MAXARGS 1000
