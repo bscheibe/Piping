@@ -1,0 +1,32 @@
+                       if (!strcmp(args[a], "|")) {
+                                int p[2];
+                                pipe(p);
+                                // Init a pipe.
+                                int parent = fork();
+                                if (!parent) {
+                                        close(p[1]);
+                                        dup2(p[0], STDOUT_FILENO);
+                                        close(p[0]);
+                                        // CLose stdin on child, and dup() the read part of pipe into it.
+                                        int i = 0;
+                                        strcpy(toexec, args[a+1]);
+                                        char **newargs = calloc(MAXARGS, sizeof(char*));
+                                        while (args[a+i+1] != NULL) {
+                                                newargs[i] = args[a+i+1];
+                                                i++;
+                                        }
+                                        // Generate argument array for child.
+                                        execve(toexec, newargs, envp);
+                                        // Child executes.
+                                } else {
+                                        close(p[0]);
+                                        close(1);
+                                        dup(p[1]);
+                                        // Close stdout on parent, and dup() the write part of pipe into it.
+                                        args[a] = NULL;
+                                        args[a+1] = NULL;
+                                        // Avoid passing the args for our second command to our first.
+                                        execve(toexec, args, envp);
+                                        // Parent executes.
+                                }
+                        }// Execute two processes if we are handiling IPC.
