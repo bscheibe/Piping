@@ -20,6 +20,7 @@
 #include "watchmail.h"
 #include <sys/stat.h>
 #include <pthread.h>
+#include <fcntl.h>
 
 pid_t cpid;
 
