@@ -49,6 +49,7 @@ int sh( int argc, char **argv, char **envp)
         struct alias* alist = NULL;
         int space;
         int valid;
+        int nocobler = 0;
         uid = getuid();
         password_entry = getpwuid(uid);         /* get passwd info */
         homedir = password_entry->pw_dir; /* Home directory to start
@@ -171,6 +172,16 @@ int sh( int argc, char **argv, char **envp)
                         printf("Executing built-in exit\n");
                         exit(0);
                 }
+                else if(strcmp(command, "unset") == 0) {
+		        if (!strcmp(args[1], "nocobler")) {
+		        	nocobler = 0;
+		        }
+	        }
+	        else if(strcmp(command, "set") == 0) {
+	        	if (!strcmp(args[1], "nocobler")) {
+		        	nocobler = 1;
+	        	}
+	        }
                 else if(strcmp(command, "watchmail") == 0) {
                         printf("Watching mail\n");
 
@@ -253,14 +264,88 @@ int sh( int argc, char **argv, char **envp)
                         }
                         // If the command if found in the path, execute it as a child process
                         if(found) {
-                                printf("Executing %s\n", toexec);
-                                // Create a child process
-                                cpid = fork();
-                                struct itimerval timer;
-                                if(cpid == 0) {
-                                        // Child process executes command
-                                        execve(toexec, args, envp);
-                                }
+                                int a = 0;
+		printf("Executing %s\n", toexec);
+		// Create a child process
+		cpid = fork();
+		struct itimerval timer;
+		if(cpid == 0){
+			int fid;
+			int found = 0;
+			while (args[a] != NULL) {
+				// Child process executes command
+				if (!strcmp(args[a], ">")) {
+					if (nocobler && !access(args[a+1], F_OK)) {
+						printf("%s: File exists.\n", args[a+1]);
+						a = -1;
+						break;
+					}
+					fid = open(args[a+1], O_WRONLY|O_CREAT|O_TRUNC);
+					close(1);
+					dup(fid);
+					found = 1;
+					break;
+				}// Redirect stdout to file.
+				if (!strcmp(args[a], ">&")) {
+					if (nocobler && !access(args[a+1], F_OK)) {
+						printf("%s: File exists.\n", args[a+1]);
+						a = -1;
+						break;
+					}
+					fid = open(args[a+1], O_WRONLY|O_CREAT|O_TRUNC);
+					close(1);
+					close(2);
+					dup(fid);
+					dup(fid);
+					found = 1;
+					break;
+				}// Redirect stdout and stderr to file.
+				if (!strcmp(args[a], ">>")) {
+					if (nocobler && access(args[a+1], F_OK)) {
+                                                printf("%s: File does not exist.\n", args[a+1]);
+                                                a = -1;
+						break;
+                                        }
+					fid = open(args[a+1], O_WRONLY|O_CREAT|O_APPEND);
+					close(1);
+					dup(fid);
+					found = 1;
+					break;
+				}// Redirect stdout to file, appending instead.
+				if (!strcmp(args[a], ">>&")) {
+					if (nocobler && access(args[a+1], F_OK)) {
+                                                printf("%s: File does not exist.\n", args[a+1]);
+                                                a = -1;
+						break;
+                                        }
+					fid = open(args[a+1], O_WRONLY|O_CREAT|O_APPEND);
+					close(1);
+					close(2);
+					dup(fid);
+					dup(fid);
+					found = 1;
+					break;
+				}// Redirect stdout and stder to file and append.
+				if (!strcmp(args[a], "<")) {
+					fid = open(args[a+1], O_RDONLY, O_CREAT);
+					close(0);
+					dup(fid);
+					found = 1;
+					break;
+				}// Redirect stdin of process to file.
+				a++;
+			}
+			if (found) {
+				args[a] = NULL;
+				args[a+1] = NULL;
+			}// Clean up the args that were used for file redirection.
+			if (a != -1) {
+				execve(toexec, args, envp);
+			} else {
+				exit(0);
+			}// Check if our nocobler caused an issue. Exit if we aren't calling exec.
+		}
+
                                 else if(cpid == -1) {
                                         perror(NULL);
                                 }
