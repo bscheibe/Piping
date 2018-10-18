@@ -5,7 +5,8 @@
                                 int parent = fork();
                                 if (!parent) {
                                         close(p[1]);
-                                        dup2(p[0], STDOUT_FILENO);
+/////                                   close(0);
+/////                                   dup(p[0]);
                                         close(p[0]);
                                         // CLose stdin on child, and dup() the read part of pipe into it.
                                         int i = 0;
@@ -22,6 +23,7 @@
                                         close(p[0]);
                                         close(1);
                                         dup(p[1]);
+///////                                 close(p[1]);
                                         // Close stdout on parent, and dup() the write part of pipe into it.
                                         args[a] = NULL;
                                         args[a+1] = NULL;
