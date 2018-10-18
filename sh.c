@@ -21,6 +21,8 @@
 #include <sys/stat.h>
 #include <pthread.h>
 #include <fcntl.h>
+#include "watchuser.h"
+#include <utmpx.h>
 
 pid_t cpid;
 
@@ -29,7 +31,39 @@ pid_t cpid;
  * argv: the array of arguments given
  * envp: the array of ponters to environment variables
  */
-int sh( int argc, char **argv, char **envp)
+
+ pthread_mutex_t lock;
+ struct UserNode *watchuser = NULL;
+ void *watchuser_thread(void *arg){
+     struct utmpx *up;
+     //setutxent();
+
+     while(1){
+         setutxent();
+         while((up = getutxent())){
+             if ( up->ut_type == USER_PROCESS )
+             {
+                 pthread_mutex_lock(&lock);
+                 struct UserNode* user = findUser(watchuser, up->ut_user);
+                 if(user != NULL){
+                     if(user->logged_on == 0){
+                         printf("\n%s has logged on %s from %s\n", up->ut_user, up->ut_line, up ->ut_host);
+                         user->logged_on = 1;
+                     }
+                 }
+                 pthread_mutex_unlock(&lock);
+
+             }
+         }
+         //printf("FFFFF\n");
+         //pthread_mutex_lock(&lock);
+         //DO THING
+         //pthread_mutex_unlock(&lock);
+         sleep(1);
+     }
+ }
+
+ int sh( int argc, char **argv, char **envp)
 {
     //Setting up variables needed for the shell to function
     char * prompt = calloc(PROMPTMAX, sizeof(char));
@@ -37,7 +71,7 @@ int sh( int argc, char **argv, char **envp)
     char *commandline = calloc(MAX_CANON, sizeof(char));
     char *command, *arg, *commandpath, *p, *pwd, *owd;
     char **args = calloc(MAXARGS, sizeof(char*));
-    int uid, i, status, argsct, go = 1;
+    int uid, i, status, argsct, watchingusersnum = 0, go = 1;
     struct passwd *password_entry;
     struct MailNode *watchmail = NULL;
     char *homedir;
@@ -52,6 +86,7 @@ int sh( int argc, char **argv, char **envp)
     int valid;
     int nocobler = 0;
     uid = getuid();
+    pthread_t watchuser_threadid;
     password_entry = getpwuid(uid);         /* get passwd info */
     homedir = password_entry->pw_dir; /* Home directory to start
                                              out with*/
@@ -211,6 +246,29 @@ int sh( int argc, char **argv, char **envp)
             } else {
                 printf("watchmail: Invalid amount of arguments\n");
             }
+        }
+
+        else if(strcmp(command, "watchuser") == 0) { // WatchUser
+                if(argsct == 2) {
+                        printf("Watching user %s\n", args[1]);
+
+                        char* user = (char *)malloc(strlen(args[1]));
+                        strcpy(user, args[1]);
+
+                        pthread_mutex_lock(&lock); //locking
+                        watchuser = userAppend(watchuser, user);
+                        pthread_mutex_unlock(&lock);//unlocking
+
+                        //Spin up thread if it doesn't exist
+                        if(watchingusersnum == 0) {
+                                pthread_create(&watchuser_threadid, NULL, watchuser_thread, NULL);
+                                watchingusersnum = 1;
+                        }
+                }else{
+                        printf("watchuser: Not enough arguments\n");
+                }
+
+
         }
         else if(strcmp(command, "which") == 0) {
             // Finds first alias or file in path directory that

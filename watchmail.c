@@ -36,7 +36,7 @@ void mailTraverse(struct MailNode* head){
 
     while(current->next != NULL){
         //printf("AAAAAAAAAA\n");
-        printf("File: %s Id: %i\n", current->filepath, current->thread_id);
+        printf("File: %s Id: %i\n", current->filepath, (int)current->thread_id);
         current = current->next;
     }
 }
@@ -68,7 +68,7 @@ struct MailNode* mailListRemoveNode(struct MailNode* head, char* filepath){
 }
 
 void freeMailNode(struct MailNode* node){
-    printf("%i, %s\n",node->thread_id,node->filepath);
+    printf("%i, %s\n",(int)node->thread_id,node->filepath);
     pthread_cancel(node->thread_id);
     pthread_join(node->thread_id, NULL);
     free(node->filepath);
