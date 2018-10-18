@@ -1,19 +1,13 @@
 #include <pthread.h>
 
-struct MailNode
+struct Node_Mail
 {
   char* filepath;
   pthread_t thread_id;
-  struct MailNode *next;
+  struct Node_Mail *next;
 };
-
-
-struct MailNode* mailAppend(struct MailNode*, char*, pthread_t);
-
-void freeMailNode(struct MailNode*);
-
-struct MailNode* mailListRemoveNode(struct MailNode*, char*);
-
-void mailTraverse(struct MailNode*);
-
-void mailFreeAll(struct MailNode*);
+struct Node_Mail* mailAdd(struct Node_Mail*, char*, pthread_t);
+struct Node_Mail* mailRemoveNode(struct Node_Mail*, char*);
+void mailTraverse(struct Node_Mail*);
+void mailFreeNode(struct Node_Mail*);
+void mailFreeAll(struct Node_Mail*);

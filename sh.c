@@ -33,7 +33,7 @@ pid_t cpid;
  */
 
  pthread_mutex_t lock;
- struct UserNode *watchuser = NULL;
+ struct Node_User *watchuser = NULL;
  void *watchuser_thread(void *arg){
      struct utmpx *up;
      //setutxent();
@@ -44,21 +44,17 @@ pid_t cpid;
              if ( up->ut_type == USER_PROCESS )
              {
                  pthread_mutex_lock(&lock);
-                 struct UserNode* user = findUser(watchuser, up->ut_user);
+                 struct Node_User* user = userFind(watchuser, up->ut_user);
                  if(user != NULL){
-                     if(user->logged_on == 0){
+                     if(user->loggedin == 0){
                          printf("\n%s has logged on %s from %s\n", up->ut_user, up->ut_line, up ->ut_host);
-                         user->logged_on = 1;
+                         user->loggedin = 1;
                      }
                  }
                  pthread_mutex_unlock(&lock);
 
              }
          }
-         //printf("FFFFF\n");
-         //pthread_mutex_lock(&lock);
-         //DO THING
-         //pthread_mutex_unlock(&lock);
          sleep(1);
      }
  }
@@ -73,7 +69,7 @@ pid_t cpid;
     char **args = calloc(MAXARGS, sizeof(char*));
     int uid, i, status, argsct, watchingusersnum = 0, go = 1;
     struct passwd *password_entry;
-    struct MailNode *watchmail = NULL;
+    struct Node_Mail *watchmail = NULL;
     char *homedir;
 
     struct pathelement *pathlist;
@@ -232,40 +228,37 @@ pid_t cpid;
                     char* filepath = (char *)malloc(strlen(args[1]));
                     strcpy(filepath, args[1]);
                     pthread_create(&thread_id, NULL, watchmail_thread, (void *)filepath);
-                    watchmail = mailAppend(watchmail, filepath, thread_id);
+                    watchmail = mailAdd(watchmail, filepath, thread_id);
                 } else {
-                    printf("watchmail: %s does not exist\n", args[1]);
+                    printf("%s does not exist\n", args[1]);
                 }
 
             } else if(argsct == 3) {
                 if(strcmp(args[2], "off") == 0) {
-                    watchmail = mailListRemoveNode(watchmail,args[1]);
+                    watchmail = mailRemoveNode(watchmail,args[1]);
                 } else {
-                    printf("watchmail: Wrong third argument\n");
+                    printf("Incorrect input for third argument\n");
                 }
             } else {
-                printf("watchmail: Invalid amount of arguments\n");
+                printf("Incorrect amount of arguments\n");
             }
         }
 
         else if(strcmp(command, "watchuser") == 0) { // WatchUser
                 if(argsct == 2) {
                         printf("Watching user %s\n", args[1]);
-
                         char* user = (char *)malloc(strlen(args[1]));
                         strcpy(user, args[1]);
-
-                        pthread_mutex_lock(&lock); //locking
-                        watchuser = userAppend(watchuser, user);
-                        pthread_mutex_unlock(&lock);//unlocking
-
-                        //Spin up thread if it doesn't exist
+                        pthread_mutex_lock(&lock);
+                        watchuser = userAdd(watchuser, user);
+                        pthread_mutex_unlock(&lock);
+=
                         if(watchingusersnum == 0) {
                                 pthread_create(&watchuser_threadid, NULL, watchuser_thread, NULL);
                                 watchingusersnum = 1;
                         }
                 }else{
-                        printf("watchuser: Not enough arguments\n");
+                        printf("Wrong amount of arguments\n");
                 }
 
 
@@ -511,7 +504,7 @@ void *watchmail_thread(void *arg) {
 
         stat(filepath, &stat_path);
         if((long)stat_path.st_size != old_size) {
-            printf("\a\nBEEP! You got mail in %s at time %s\n", filepath, ctime(&curtime));
+            printf("\a\nBEEP You've Got Mail in %s at time %s\n", filepath, ctime(&curtime));
             fflush(stdout);
             old_size = (long)stat_path.st_size;
         }

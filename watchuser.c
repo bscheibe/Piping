@@ -3,22 +3,19 @@
 #include<string.h>
 #include "watchuser.h"
 
-struct UserNode* userAppend(struct UserNode* h, char* user){
-    struct UserNode* curr = h;
-
+struct Node_User* userAdd(struct Node_User* h, char* user){
+    struct Node_User* curr = h;
 
     if(h != NULL){
         while(curr->next != NULL){
             curr = curr->next;
         }
     }
-
-    struct UserNode* new = (struct UserNode*)malloc(sizeof(struct UserNode));
-
+    struct Node_User* new = (struct Node_User*)malloc(sizeof(struct Node_User));
     new->user = user;
-    new->logged_on = 0;
-
+    new->loggedin = 0;
     new->next = NULL;
+
     strcpy(new->user, user);
 
     if(h != NULL){
@@ -26,40 +23,24 @@ struct UserNode* userAppend(struct UserNode* h, char* user){
     }else{
         h = new;
     }
-
     return h;
 }
 
-struct UserNode* findUser(struct UserNode* h, char* user){
-    struct UserNode* curr = h;
-
-    while(curr != NULL){
-        if(strcmp(user, curr->user) == 0){
-            return curr;
-        }
-        curr = curr->next;
-    }
-
-    return NULL;
-}
-
-struct UserNode* userListRemoveNode(struct UserNode* h, char* user){
-    struct UserNode* curr = h;
-
-    //At h of list
+struct Node_User* userListRemoveNode(struct Node_User* h, char* user){
+    struct Node_User* curr = h;
     if(strcmp(curr->user, user) == 0){
         h = curr->next;
-        freeNode(curr);
+        userFreeNode(curr);
         return h;
     }
 
     while(curr!=NULL){
-        struct UserNode* next = curr->next;
+        struct Node_User* next = curr->next;
 
         if(next != NULL){
             if(strcmp(next->user, user) == 0){
                 curr->next = next->next;
-                freeNode(next);
+                userFreeNode(next);
             }
         }
 
@@ -69,15 +50,28 @@ struct UserNode* userListRemoveNode(struct UserNode* h, char* user){
     return h;
 }
 
-void freeNode(struct UserNode* node){
+struct Node_User* userFind(struct Node_User* h, char* user){
+    struct Node_User* curr = h;
+    while(curr != NULL){
+        if(strcmp(user, curr->user) == 0){
+            return curr;
+        }
+        curr = curr->next;
+    }
+    return NULL;
+}
+
+
+
+void userFreeNode(struct Node_User* node){
     free(node->user);
     free(node);
 }
 
-void userFreeAll(struct UserNode* h){
-    struct UserNode* curr = h;
+void userFreeAll(struct Node_User* h){
+    struct Node_User* curr = h;
     while(curr != NULL){
-        struct UserNode* temp = curr;
+        struct Node_User* temp = curr;
         curr = curr->next;
         free(temp->user);
         free(temp);

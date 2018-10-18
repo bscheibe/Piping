@@ -1,17 +1,12 @@
 
-struct UserNode
+struct Node_User
 {
   char* user;
-  int logged_on;
-  struct UserNode *next;
+  int loggedin;
+  struct Node_User *next;
 };
-
-struct UserNode* userAppend(struct UserNode*, char*);
-
-struct UserNode* findUser(struct UserNode*, char*);
-
-struct UserNode* userRemoveNode(struct UserNode*, char*);
-
-void freeNode(struct UserNode*);
-
-void userFreeAll(struct UserNode*);
+struct Node_User* userRemove(struct Node_User*, char*); // need to implement
+struct Node_User* userFind(struct Node_User*, char*);
+struct Node_User* userAdd(struct Node_User*, char*);
+void userFreeNode(struct Node_User*);
+void userFreeAll(struct Node_User*);
